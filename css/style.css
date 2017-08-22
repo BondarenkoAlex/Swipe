@@ -1,0 +1,26 @@
+.screen{
+	border: 1px solid blue;
+	overflow: hidden;
+	height: 400px;
+}
+.pull-to-refresh-wrap{
+	position: relative;
+}
+.pull-to-refresh-loading{
+	background-color: red;
+	position: absolute;
+}
+.pull-to-refresh-loading-top{
+	transform: translateY(-20px);
+}
+.pull-to-refresh-loading-bottom{
+	
+}
+.pull-to-refresh-list {
+	padding: 0;
+	margin: 0;
+	background-color: green;
+}
+.pull-to-refresh-list li {
+	border: 1px solid black;
+}
