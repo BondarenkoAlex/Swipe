@@ -1,76 +1,56 @@
+import TouchByKey from './TouchByKey.js';
+
 class Swipe {
+
   constructor(elem) {
+    //debugger;
     this.elem = elem || document.getElementById("ptr");
+    this._touchByKey = new TouchByKey();
   }
 
   listener() {
-    this.elem.addEventListener("touchstart", handleStart, false);
-    this.elem.addEventListener("touchend", handleEnd, false);
-    this.elem.addEventListener("touchcancel", handleCancel, false);
-    this.elem.addEventListener("touchmove", handleMove, false);
+    this.elem.addEventListener("touchstart", this.handleStart.bind(this), false);
+    this.elem.addEventListener("touchend", this.handleEnd.bind(this), false);
+    this.elem.addEventListener("touchcancel", this.handleCancel.bind(this), false);
+    this.elem.addEventListener("touchmove", this.handleMove.bind(this), false);
   }
 
   handleStart(evt) {
     evt.preventDefault();
-    log("touchstart.");
+    console.log("touchstart.");
 
-    var touches = evt.changedTouches;
-    xDown = evt.touches[0].clientX;
-    yDown = evt.touches[0].clientY;
+    var touches = evt.changedTouches[0];
+    this._touchByKey.setTouch(touches)
+
   }
 
   handleMove(evt) {
     evt.preventDefault();
-
-    var touches = evt.changedTouches;
-    log("handleMove.");
-
-    if (!xDown || !yDown) {
-      return;
-    }
-
-    const xUp = evt.touches[0].clientX;
-    const yUp = evt.touches[0].clientY;
-
-    const xDiff = xDown - xUp;
-    const yDiff = yDown - yUp;
-
-    if (Math.abs(xDiff) > Math.abs(yDiff)) {
-      if (xDiff > 0) {
-        // left swipe
-        console.log('left');
-      } else {
-        // right swipe
-        console.log('right');
-      }
-    } else {
-      if (yDiff > 0) {
-        // up swipe
-        console.log('up');
-      } else {
-        // down swipe
-        console.log('down');
-      }
-    }
-    // reset values
-    xDown = null;
-    yDown = null;
-
+    console.log("handlemove");
+    var touches = evt.changedTouches[0];
+    this._touchByKey.updateTouch(touches)
+    console.log(this._touchByKey);
   }
 
   handleEnd(evt) {
     evt.preventDefault();
-    log("touchend");
+    console.log("touchend");
 
-    var touches = evt.changedTouches;
 
+    var touches = evt.changedTouches[0];
+    //this._touchByKey.delete(touches)
   }
 
   handleCancel(evt) {
     evt.preventDefault();
-    log("touchcancel.");
+    console.log("touchcancel.");
     var touches = evt.changedTouches;
 
   }
 
 }
+
+export default Swipe;
+
+
+
