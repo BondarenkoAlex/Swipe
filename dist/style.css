@@ -1,7 +1,8 @@
 .screen{
 	border: 1px solid blue;
-	overflow: hidden;
+	overflow: auto;
 	height: 400px;
+	position: relative;
 }
 .pull-to-refresh-wrap{
 	position: relative;

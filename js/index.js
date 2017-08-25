@@ -8,5 +8,5 @@ window.onload = function () {
 
 function startup() {
   let swipe = new Swipe(document.getElementById("ptr"));
-  swipe.listener();
+  swipe.addListener();
 }
