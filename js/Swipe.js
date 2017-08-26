@@ -4,7 +4,8 @@ class Swipe {
 
   constructor(elem) {
     //debugger;
-    this.elem = elem || document.getElementById("ptr");
+    this.elem = document.getElementById("ptr");
+    this.ptrList = document.getElementById("ptr-list");
     this._touchByKey = new TouchByKey();
   }
 
@@ -16,33 +17,51 @@ class Swipe {
   }
 
   handleStart(evt) {
-    evt.preventDefault();
+    //evt.preventDefault();
     console.log("touchstart.");
 
-    var touches = evt.changedTouches[0];
-    this._touchByKey.setTouch(touches)
+    var touches = evt.changedTouches //[0];
+    touchEach.call(this, touches, this._touchByKey.setTouch);
+    //this._touchByKey.setTouch(touches)
 
   }
 
   handleMove(evt) {
-    evt.preventDefault();
+    //evt.preventDefault();
     console.log("handlemove");
-    var touches = evt.changedTouches[0];
-    this._touchByKey.updateTouch(touches)
+    var touches = evt.changedTouches; //[0];
+    touchEach.call(this, touches, this._touchByKey.updateTouch);
+    //this._touchByKey.updateTouch(touches)
+const enfeeble = 4;
+    var parent = this.elem;
+    const scrollTop = parent.scrollTop;
+
+    const ptrList = this.ptrList;
+
+    if ( scrollTop === 0 && (ptrList.style.transform == "translateY(0)" || ptrList.style.transform == "") ) {
+      touchEach.call(this, touches, this._touchByKey.resetStart);
+      ptrList.style.transform = "translateY(0px)"
+    } else if (scrollTop === 0 && ptrList.transform != "") {
+      const touch = this._touchByKey[0];
+      ptrList.style.transform = `translateY(${-touch.difY/enfeeble}px)`;
+    } else {
+      ptrList.style.transform = "translateY(0)";
+    }
+
     console.log(this._touchByKey);
   }
 
   handleEnd(evt) {
-    evt.preventDefault();
+    //evt.preventDefault();
     console.log("touchend");
 
-
-    var touches = evt.changedTouches[0];
+    var touches = evt.changedTouches; //[0];
+    touchEach.call(this, touches, this._touchByKey.delete);
     //this._touchByKey.delete(touches)
   }
 
   handleCancel(evt) {
-    evt.preventDefault();
+    //evt.preventDefault();
     console.log("touchcancel.");
     var touches = evt.changedTouches;
 
@@ -51,6 +70,13 @@ class Swipe {
 }
 
 export default Swipe;
+
+function touchEach(touches, f) {
+  for (var i = touches.length - 1; i >= 0; i = i - 1) {
+    var touch = touches[i];
+    f.call(this._touchByKey, touch);
+  }
+}
 
 
 
