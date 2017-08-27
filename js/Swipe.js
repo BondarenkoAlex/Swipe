@@ -1,4 +1,9 @@
 import TouchByKey from './TouchByKey.js';
+import Touch2 from './Touch2.js';
+
+const enfeeble = 4; //ослабление
+const distance = 50; // дистанция
+
 
 class Swipe {
 
@@ -32,7 +37,7 @@ class Swipe {
     var touches = evt.changedTouches; //[0];
     touchEach.call(this, touches, this._touchByKey.updateTouch);
     //this._touchByKey.updateTouch(touches)
-const enfeeble = 4;
+
     var parent = this.elem;
     const scrollTop = parent.scrollTop;
 

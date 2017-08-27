@@ -10,7 +10,7 @@ class Touch {
     this.startClientY = this.clientY = touch.clientY;
     this.startPageX = this.pageX = touch.pageX;
     this.startPageY = this.pageY = touch.pageY;
-    this._touch = touch;
+    this.touch = touch;
   }
 
   updateTouch(touch) {
