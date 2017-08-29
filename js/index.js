@@ -1,5 +1,5 @@
 //import Swipe from './Swipe';
-import Swipe3 from './Swipe3';
+import Swipe3 from './Swipe';
 
 window.onload = function () {
   startup();

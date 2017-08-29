@@ -1,13 +1,25 @@
 class Element {
-  constructor() {
-    this.scrollTop = 0;
-    this.scrollHeight = 0;
-    this.clientHeight = null;
+  /**
+   *
+   * @param scrollTop {Number}
+   * @param scrollHeight {Number}
+   * @param clientHeight {Number}
+   */
+  constructor(scrollTop, scrollHeight, clientHeight) {
+    this.scrollTop = scrollTop;
+    this.scrollHeight = scrollHeight;
+    this.clientHeight = clientHeight;
   }
 
-  setElement(value = {}) {
-    this.scrollTop = value.scrollTop;
-    this.scrollHeight = value.scrollHeight;
-    this.clientHeight = value.clientHeight;
+  /**
+   *
+   * @param element {Element}
+   */
+  update(element) {
+    this.scrollTop = element.scrollTop;
+    this.scrollHeight = element.scrollHeight;
+    this.clientHeight = element.clientHeight;
   }
 }
+
+export default Element;

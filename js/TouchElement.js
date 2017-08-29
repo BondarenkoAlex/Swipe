@@ -1,52 +1,54 @@
-//import { DIRECTION } from './constants';
-//import Direction from './Direction';
 import Touch from './Touch';
 import Element from './Element';
 import { DIRECTION } from './constants';
 
 class TouchElement {
-  constructor() {
-    this.touch = new Touch();
-    this.element = new Element();
+  /**
+   *
+   * @param touch {Touch}
+   * @param element {Element}
+   */
+  constructor(touch, element) {
+    this.touch = touch;
+    this.element = element;
   }
 
-  start(touch, elem) {
-    this.touch.startY = this.touch.currentY = touch.clientY;
-    this.touch.identifier = touch.identifier;
-    this.element.setElement(elem);
-  }
-
-  current(touch, elem) {
-    this.touch.currentY = touch.clientY;
-    this.element.setElement(elem);
+  /**
+   *
+   * @param touch {Touch}
+   * @param scrollTop
+   * @param scrollHeight
+   * @param clientHeight
+   */
+  update(touch, scrollTop, scrollHeight, clientHeight) {
+    this.touch.update(touch);
+    this.element.update({scrollTop, scrollHeight, clientHeight});
   }
 
   get distance() {
     const moveTouchTopY = ~~(this.touch.currentY - this.touch.startY); //round
-    const distanceTop = moveTouchTopY - this.elem.scrollTop;
+    const distanceTop = moveTouchTopY - this.element.scrollTop;
 
     const moveTouchBottomY = ~moveTouchTopY + 1; //reverse
-    const scrollBottom = this.elem.scrollHeight - (this.elem.scrollTop + this.elem.clientHeight);
+    const scrollBottom = this.element.scrollHeight - (this.element.scrollTop + this.element.clientHeight);
     const distanceBottom = moveTouchBottomY - scrollBottom;
 
-    // #todo вынести, чтобы ссылка была всегда одна и таже
-    let result = {
-      distance: null,
-      direction: null,
-    };
-
     if (distanceTop > 0) {
-      result = {
+      return {
         distance: distanceTop,
         direction: DIRECTION.UP,
       }
     } else if (distanceBottom > 0) {
-      result = {
+      return {
         distance: distanceBottom,
         direction: DIRECTION.DOWN,
       }
+    } else {
+      return {
+        distance: null,
+        direction: null,
+      };
     }
-    return result;
   }
 }
 
