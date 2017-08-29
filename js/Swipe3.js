@@ -1,5 +1,5 @@
 //import TouchByKey from './TouchByKey.js';
-import Touch3 from './Touch3.js';
+import Touch3 from './TouchElement.js';
 
 const enfeeble = 4; //ослабление
 const distance = 50; // дистанция
