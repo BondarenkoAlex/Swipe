@@ -1,6 +1,5 @@
-import {DIRECTION} from './constants';
+import { DIRECTION } from './constants';
 import Direction from './Direction';
-
 
 class Touch {
   constructor(touch) {
@@ -11,7 +10,7 @@ class Touch {
     this.startClientY = this.clientY = touch.clientY;
     this.startPageX = this.pageX = touch.pageX;
     this.startPageY = this.pageY = touch.pageY;
-    this._touch = touch;
+    this.touch = touch;
   }
 
   updateTouch(touch) {
@@ -21,6 +20,15 @@ class Touch {
     this.clientY = touch.clientY;
     this.pageX = touch.pageX;
     this.pageY = touch.pageY;
+  }
+
+  resetStart(touch) {
+    this.startScreenX = touch.screenX;
+    this.startScreenY = touch.screenY;
+    this.startClientX = touch.clientX;
+    this.startClientY = touch.clientY;
+    this.startPageX = touch.pageX;
+    this.startPageY = touch.pageY;
   }
 
   get difX() {
@@ -36,13 +44,13 @@ class Touch {
 
     if (this.difX < 0) {
       direction.hor = DIRECTION.RIGHT;
-    } else if ( this.difX > 0 ) {
+    } else if (this.difX > 0) {
       direction.hor = DIRECTION.LEFT;
     }
 
     if (this.difY < 0) {
       direction.ver = DIRECTION.DOWN;
-    } else if ( this.difY > 0 ) {
+    } else if (this.difY > 0) {
       direction.ver = DIRECTION.UP;
     }
 

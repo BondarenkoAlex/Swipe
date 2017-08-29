@@ -13,6 +13,11 @@ class TouchByKey {
     this[identifier].updateTouch(touch);
   }
 
+  resetStart(touch) {
+    const { identifier } = touch;
+    this[identifier].resetStart(touch);
+  }
+
   delete(touch) {
     const { identifier } = touch;
     delete this[identifier];
