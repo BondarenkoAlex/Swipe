@@ -26,12 +26,12 @@ class Swipe {
   handleStart(evt) {
     const touches = evt.changedTouches;
 
-    const parent = this.ptrList.parentElement;
+    const grandpa = this.ptrList.parentElement.parentElement;
     const {
             scrollTop,
             scrollHeight,
             clientHeight,
-          } = parent;
+          } = grandpa;
 
     this.touchElementList.setTouchElements(touches, scrollTop, scrollHeight, clientHeight);
   }
@@ -39,21 +39,25 @@ class Swipe {
   handleMove(evt) {
     const touches = evt.targetTouches;
 
-    const parent = this.ptrList.parentElement;
+    const grandpa = this.ptrList.parentElement.parentElement;
     const {
             scrollTop,
             scrollHeight,
             clientHeight,
-          } = parent;
+          } = grandpa;
 
     this.touchElementList.updateTouchElements(touches, scrollTop, scrollHeight, clientHeight);
     const touchElement = this.touchElementList.getFirstTouchElement();
 
     const { distance } = touchElement;
 
+    console.log("distance", distance);
+
     if (distance.direction === DIRECTION.UP) {
+      evt.preventDefault();
       this.ptrList.style.transform = `translateY(${distance.distance}px)`;
     } else if (distance.direction === DIRECTION.DOWN) {
+      evt.preventDefault();
       this.ptrList.style.transform = `translateY(-${distance.distance}px)`;
     } else {
       this.ptrList.style.transform = '';
