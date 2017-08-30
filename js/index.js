@@ -1,4 +1,4 @@
-//import Swipe from './Swipe';
+import '../style/style.css';
 import Swipe3 from './Swipe';
 
 window.onload = function () {
