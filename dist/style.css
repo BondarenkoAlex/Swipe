@@ -31,6 +31,7 @@
     margin: 0;
     background-color: green;
     position: relative;
+    transform: translateY(10px);
 }
 
 .pull-to-refresh-list li {
