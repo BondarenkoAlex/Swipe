@@ -19,10 +19,10 @@ class Swipe {
   }
 
   listener() {
-    this.ptrList.addEventListener("touchstart", this.handleStart, false );
-    this.ptrList.addEventListener("touchmove", this.handleMove, false );
-    this.ptrList.addEventListener("touchend", this.handleEnd, false );
-    this.ptrList.addEventListener("touchcancel", this.handleEnd, false );
+    this.ptrList.addEventListener("touchstart", this.handleStart, {passive: false } );
+    this.ptrList.addEventListener("touchmove", this.handleMove, {passive: false } );
+    this.ptrList.addEventListener("touchend", this.handleEnd, {passive: false } );
+    this.ptrList.addEventListener("touchcancel", this.handleEnd, {passive: false } );
   }
 
   handleStart(evt) {
