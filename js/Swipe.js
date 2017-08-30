@@ -64,14 +64,14 @@ class Swipe {
 
     if (distance.direction === DIRECTION.UP) {
       evt.preventDefault();
-      evt.stopPropagation();
+      //evt.stopPropagation();
       this.ptrList.style.transform = `translateY(${distance.distance}px)`;
-      return;
+      //return;
     } else if (distance.direction === DIRECTION.DOWN) {
       evt.preventDefault();
-      evt.stopPropagation();
+      //evt.stopPropagation();
       this.ptrList.style.transform = `translateY(-${distance.distance}px)`;
-      return;
+      //return;
     } else {
       this.ptrList.style.transform = '';
     }

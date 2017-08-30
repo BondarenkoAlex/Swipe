@@ -1,5 +1,5 @@
 import '../style/style.css';
-import Swipe3 from './Swipe';
+import Swipe from './Swipe';
 
 window.onload = function () {
   startup();
@@ -8,6 +8,6 @@ window.onload = function () {
 //let swipe = new Swipe(document.getElementById("ptr"));
 
 function startup() {
-  let swipe = new Swipe3();
+  let swipe = new Swipe();
   swipe.listener();
 }
