@@ -66,10 +66,12 @@ class Swipe {
       evt.preventDefault();
       evt.stopPropagation();
       this.ptrList.style.transform = `translateY(${distance.distance}px)`;
+      return;
     } else if (distance.direction === DIRECTION.DOWN) {
       evt.preventDefault();
       evt.stopPropagation();
       this.ptrList.style.transform = `translateY(-${distance.distance}px)`;
+      return;
     } else {
       this.ptrList.style.transform = '';
     }
