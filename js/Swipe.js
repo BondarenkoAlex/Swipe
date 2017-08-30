@@ -45,6 +45,8 @@ class Swipe {
 
     console.log("distance", distance);
     this.ptrList.style.transform = `translateY(${touches[0].clientY-startY}px)`;
+      evt.preventDefault();
+      evt.stopPropagation();
 
     // const grandpa = this.ptrList.parentElement.parentElement;
     // const {
