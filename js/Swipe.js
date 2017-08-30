@@ -43,36 +43,36 @@ class Swipe {
   handleMove(evt) {
     const touches = evt.targetTouches;
 
+    // console.log("distance", distance);
+    // this.ptrList.style.transform = `translateY(${touches[0].clientY-startY}px)`;
+    //   evt.preventDefault();
+    //   evt.stopPropagation();
+
+    const grandpa = this.ptrList.parentElement.parentElement;
+    const {
+            scrollTop,
+            scrollHeight,
+            clientHeight,
+          } = grandpa;
+
+    this.touchElementList.updateTouchElements(touches, scrollTop, scrollHeight, clientHeight);
+    const touchElement = this.touchElementList.getFirstTouchElement();
+
+    const { distance } = touchElement;
+
     console.log("distance", distance);
-    this.ptrList.style.transform = `translateY(${touches[0].clientY-startY}px)`;
+
+    if (distance.direction === DIRECTION.UP) {
       evt.preventDefault();
       evt.stopPropagation();
-
-    // const grandpa = this.ptrList.parentElement.parentElement;
-    // const {
-    //         scrollTop,
-    //         scrollHeight,
-    //         clientHeight,
-    //       } = grandpa;
-    //
-    // this.touchElementList.updateTouchElements(touches, scrollTop, scrollHeight, clientHeight);
-    // const touchElement = this.touchElementList.getFirstTouchElement();
-    //
-    // const { distance } = touchElement;
-    //
-    // console.log("distance", distance);
-    //
-    // if (distance.direction === DIRECTION.UP) {
-    //   evt.preventDefault();
-    //   evt.stopPropagation();
-    //   this.ptrList.style.transform = `translateY(${distance.distance}px)`;
-    // } else if (distance.direction === DIRECTION.DOWN) {
-    //   evt.preventDefault();
-    //   evt.stopPropagation();
-    //   this.ptrList.style.transform = `translateY(-${distance.distance}px)`;
-    // } else {
-    //   this.ptrList.style.transform = '';
-    // }
+      this.ptrList.style.transform = `translateY(${distance.distance}px)`;
+    } else if (distance.direction === DIRECTION.DOWN) {
+      evt.preventDefault();
+      evt.stopPropagation();
+      this.ptrList.style.transform = `translateY(-${distance.distance}px)`;
+    } else {
+      this.ptrList.style.transform = '';
+    }
 
   }
 
