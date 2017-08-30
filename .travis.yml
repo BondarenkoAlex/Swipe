@@ -15,4 +15,6 @@ cache:
     - node_modules
   yarn: true
 
-script: true
+script:
+  - "yarn run build"
+  - true
