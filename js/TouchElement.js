@@ -22,10 +22,14 @@ class TouchElement {
    */
   update(touch, scrollTop, scrollHeight, clientHeight) {
     this.touch.update(touch);
-    this.element.update({scrollTop, scrollHeight, clientHeight});
+    this.element.update({
+      scrollTop,
+      scrollHeight,
+      clientHeight
+    });
   }
 
-  get distance() {
+  get motion() {
     const moveTouchTopY = ~~(this.touch.currentY - this.touch.startY); //round
     const distanceTop = moveTouchTopY - this.element.scrollTop;
 
@@ -40,7 +44,7 @@ class TouchElement {
       }
     } else if (distanceBottom > 0) {
       return {
-        distance: distanceBottom,
+        distance: ~distanceBottom + 1,
         direction: DIRECTION.DOWN,
       }
     } else {

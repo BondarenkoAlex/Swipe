@@ -19,6 +19,7 @@ class TouchElementList {
         this._setTouchElement(touch, scrollTop, scrollHeight, clientHeight);
       }
     });
+    return this;
   }
 
   updateTouchElements(touches, scrollTop, scrollHeight, clientHeight) {
@@ -33,6 +34,19 @@ class TouchElementList {
         touchElement.update(touch, scrollTop, scrollHeight, clientHeight);
       }
     });
+    return this;
+  }
+
+  updateTouchElement(touch, scrollTop, scrollHeight, clientHeight) {
+      const { identifier } = touch;
+
+      let touchElement = this[identifier];
+      if (touchElement === undefined) {
+        touchElement = this._setTouchElement(touch, scrollTop, scrollHeight, clientHeight);
+      } else {
+        touchElement.update(touch, scrollTop, scrollHeight, clientHeight);
+      }
+    return touchElement;
   }
 
   deleteTouchElements(touches) {
@@ -44,6 +58,7 @@ class TouchElementList {
         delete this[identifier];
       }
     });
+    return this;
   }
 
   getFirstTouchElement() {
@@ -61,6 +76,7 @@ class TouchElementList {
     const value = new Touch(touch);
     const element = new Element(scrollTop, scrollHeight, clientHeight);
     this[identifier] = new TouchElement(value, element);
+    return this[identifier];
   }
 }
 

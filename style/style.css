@@ -31,7 +31,18 @@
     margin: 0;
     background-color: green;
     position: relative;
-    transform: translateY(10px);
+    transform: translateY(0px);
+    /*transition-duration: 300ms;
+    transition-timing-function: cubic-bezier(0.33, 0.66, 0.66, 1);
+    transition-delay: 0ms;*/
+}
+
+.pull-to-refresh-list.active-up {
+    background-color: yellow;
+}
+
+.pull-to-refresh-list.active-down {
+    background-color: yellow;;
 }
 
 .pull-to-refresh-list li {
