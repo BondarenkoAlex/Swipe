@@ -62,7 +62,7 @@ class TouchElementList {
   }
 
   getFirstTouchElement() {
-    let touchElement;
+    let touchElement = null;
     Object.keys(this).some(key => (touchElement = this[key], true));
     return touchElement;
   }

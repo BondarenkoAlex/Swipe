@@ -79,8 +79,15 @@ class Swipe {
   }
 
   handleMove(evt) {
-    const touches = evt.targetTouches;
+    this._updateTouchElement(evt);
 
+    if (this.hasOwnProperty("onTouchMove")) {
+      this.onTouchMove(touchElement, this.touchElements);
+    }
+  }
+
+  _updateTouchElement(evt) {
+    const touches = evt.targetTouches;
     const grandpa = this.listElement.parentElement.parentElement;
     const {
             scrollTop,
@@ -90,55 +97,34 @@ class Swipe {
 
     const { identifier } = this.currentTouchElement.touch;
     const touch = getTouchByIdentifier(touches, identifier);
-    const touchElement = this.touchElements.updateTouchElement(touch, scrollTop, scrollHeight, clientHeight);
-    const { motion } = touchElement;
+    const { motion } = this.touchElements.updateTouchElement(touch, scrollTop, scrollHeight, clientHeight);
+    //this._setTransform(motion, evt);
 
-    this._transform(motion, evt);
-
-    if (this.hasOwnProperty("onTouchMove")) {
-      this.onTouchMove(touchElement, this.touchElements);
-    }
-  }
-
-  _transform(motion, evt) {
-    const style = this.listElement.style;
-    if (motion.distance === null) {
+    if (motion.direction === DIRECTION.DOWN
+      || motion.direction === DIRECTION.UP) {
       this.isActive = false;
-      style.transform = null;
+      this.listElement.style.transform = null;
     } else {
       evt.preventDefault();
-      const distanceEnfeeble = ~~(motion.distance / resistance); //round
       this.isActive = true;
       // #todo добавить другие свойства для кросбраузерности
-      style.transform = `translateY(${distanceEnfeeble}px)`;
-
-      let distanceAbs = distanceEnfeeble;
-      if (distanceAbs < 0) {
-        distanceAbs = ~distanceAbs + 1;
-      }
-
-      // if (distanceAbs >= distanceV) {
-      //   this._setClass("active-up");
-      //
-      //   if (this.hasOwnProperty("onRefresh")) {
-      //     this.onRefresh
-      //       .then(()=> {
-      //         this._resetStyle();
-      //       })
-      //   }
-      // }
+      const distanceEnfeeble = ~~(motion.distance / resistance); //round
+      this.listElement.style.transform = `translateY(${distanceEnfeeble}px)`;
     }
   }
 
-  _setClass(className) {
-    const classList = this.listElement.classList;
-    classList.add(className);
-  }
-
-  _removeClass(className) {
-    const classList = this.listElement.classList;
-    classList.remove(className);
-  }
+  // _setTransform(motion, evt) {
+  //   if (motion.distance === null) {
+  //     this.isActive = false;
+  //     this.listElement.style.transform = null;
+  //   } else {
+  //     evt.preventDefault();
+  //     this.isActive = true;
+  //     // #todo добавить другие свойства для кросбраузерности
+  //     const distanceEnfeeble = ~~(motion.distance / resistance); //round
+  //     this.listElement.style.transform = `translateY(${distanceEnfeeble}px)`;
+  //   }
+  // }
 
   handleEnd(evt) {
     const touchElement = this._handleRemove(evt);
@@ -162,24 +148,49 @@ class Swipe {
     const { identifier } = this.currentTouchElement.touch;
     const touch = getTouchByIdentifier(touches, identifier);
 
+    // Если закончился touch пальца, который не активный (не обрабатываем, ссылка не находится в
+    // this.currentTouchElement), то игнорируем обработку неактуального косания
     if (touch === undefined) {
       return null;
     }
 
+    // Если в данный момент скролим список, то реагировать не надо (нет в данный момент эффекта
+    // pull-to-refresh).
     if (!this.isActive) {
       return null;
     }
 
+    // Удаляем все неактивные (оторванные) touch, в том числе и активный.
     this.touchElements.deleteTouchElements(touches);
-    const touchElement = this.touchElements.getFirstTouchElement();
-
-    if (touchElement === undefined) {
-      this.currentTouchElement = null;
+    // Получаем первый touch, если есть такие (активный touch)
+    const touchElement = this.touchElements.getFirstTouchElement(); // TouchElement or null
+// #todo остановился здесь
+    if (touchElement !== null) {
+      // процедура обновления touch объекта
+      this._updateTouchElement(evt);
+    } else {
+      // процедура инициализации добавления классов и обработчиков
     }
+
+    this._pullRefreshInit();
 
     this._resetStyle();
 
     return touchElement;
+  }
+
+  _pullRefreshInit() {
+    this._setClass("active-up");
+  }
+
+  _setClass(className) {
+    const classList = this.listElement.classList;
+    classList.add(className);
+  }
+
+  _removeClass(className) {
+    const classList = this.listElement.classList;
+    classList.remove(className);
   }
 
   _resetStyle() {
@@ -194,7 +205,7 @@ class Swipe {
 
     if (this.hasOwnProperty("onRefresh")) {
       this.onRefresh
-        .then(()=> {
+        .then(() => {
           self._removeClass("active-up");
         })
     }
