@@ -50,7 +50,7 @@ class TouchElement {
     } else {
       return {
         distance: null,
-        direction: null,
+        direction: DIRECTION.NONE,
       };
     }
   }

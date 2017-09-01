@@ -37,7 +37,7 @@
     transition-delay: 0ms;*/
 }
 
-.pull-to-refresh-list.active-up {
+.pull-to-refresh-onrefresh .pull-to-refresh-list {
     background-color: yellow;
 }
 

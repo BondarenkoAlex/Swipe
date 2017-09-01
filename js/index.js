@@ -12,14 +12,20 @@ function startup() {
   const swipe = new Swipe(elem);
   swipe.addListener();
 
-  let promise = new Promise((resolve, reject) => {
+  swipe.onRefresh(function (distance) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        // переведёт промис в состояние fulfilled с результатом "result"
+        resolve("result " + distance);
+      }, 2000);
 
-    setTimeout(() => {
-      // переведёт промис в состояние fulfilled с результатом "result"
-      resolve("result");
-    }, 5000);
-
+    });
   });
 
-  swipe.onRefresh(promise);
+  swipe.callbacks({
+    onTouchMove: function (touchElement) {
+      const { motion } = touchElement;
+      console.log(motion.distance);
+    }
+  });
 }
