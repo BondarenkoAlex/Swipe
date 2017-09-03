@@ -103,22 +103,23 @@ class Swipe {
     //const { identifier } = this.currentTouchElement.touch;
     //const touch = getTouchByIdentifier(touches, identifier);
     //
-    //const touchElement = this.touchElements.updateTouchElement(touch, scrollTop, scrollHeight, clientHeight);
+    //const touchElement = this.touchElements.updateTouchElement(touch, scrollTop, scrollHeight,
+    // clientHeight);
     const touchElements = this.touchElements.updateTouchElements(touches, scrollTop, scrollHeight, clientHeight);
     const { identifier } = this.currentTouchElement.touch;
     const touchElement = touchElements[identifier];
     const { motion } = touchElement;
 
-    if (motion.direction === DIRECTION.DOWN
-      || motion.direction === DIRECTION.UP) {
+    if (motion.direction === DIRECTION.NONE) {
+      this.isActive = false;
+      this.listElement.style.transform = null;
+    } else {
+      // move UP or DOWN
       evt.preventDefault();
       this.isActive = true;
       // #todo добавить другие свойства для кросбраузерности
       const distanceEnfeeble = ~~(motion.distance / resistance); //round
       this.listElement.style.transform = `translateY(${distanceEnfeeble}px)`;
-    } else {
-      this.isActive = false;
-      this.listElement.style.transform = null;
     }
 
     return touchElement;
@@ -141,50 +142,69 @@ class Swipe {
   }
 
   _handleRemove(evt) {
-    //const touches = evt.changedTouches;
-    const touches = evt.touches;
-
-    const { identifier } = this.currentTouchElement.touch;
-    const touch = getTouchByIdentifier(touches, identifier);
-
-    // Если закончился touch пальца, который не активный (не обрабатываем, ссылка не находится в
-    // this.currentTouchElement), то игнорируем обработку неактуального косания
-    if (touch === undefined) {
-      return null;
-    }
-
     // Если в данный момент скролим список, то реагировать не надо (нет в данный момент эффекта
     // pull-to-refresh).
     if (!this.isActive) {
       return null;
     }
 
+    const touches = evt.changedTouches; // те, которые покинули экран
+    //const touches = evt.touches;
+
+    // const { identifier } = this.currentTouchElement.touch;
+    //const touch = getTouchByIdentifier(touches, identifier);
+
+    const {
+            scrollTop,
+            scrollHeight,
+            clientHeight,
+          } = this.grandpa;
+
+    const touchElements = this.touchElements.updateTouchElements(touches, scrollTop, scrollHeight, clientHeight);
+
     // Удаляем все неактивные (оторванные) touch, в том числе и активный.
     this.touchElements.deleteTouchElements(touches);
-    // Получаем первый touch, если есть такие (активный touch)
-    let touchElement = this.touchElements.getFirstTouchElement(); // TouchElement or null
+    // Получаем новый активный палец (если такой есть)
+    const touchElementMemory = this.currentTouchElement;
 
-    if (touchElement !== null) {
-      // процедура обновления touch объекта
-      let touchElement = this._updateTouchElement(evt);
-    } else {
-      // процедура инициализации добавления классов и обработчиков
-      const { motion } = this.currentTouchElement;
+    const { identifier } = this.currentTouchElement.touch;
 
-      const distanceEnfeeble = ~~(motion.distance / resistance); //round
-      let distanceEnfeebleAbs = distanceEnfeeble; // only for compare
-      if (motion.direction === DIRECTION.DOWN) {
-        distanceEnfeebleAbs = ~distanceEnfeebleAbs + 1;
-      }
-      if (distanceEnfeebleAbs >= distance) {
-        const classNames = this._getClassNames(motion.direction);
-        this._addClass(...classNames);
-        this._onRefresh(distanceEnfeeble, classNames);
-      }
-      this._setStyle();
+    // поиск в "оторваных" пальцах расчетный палец по идентофикатору
+    let isRemoveCurTouchElement = Object.keys(touches).some(key => touches[key].identifier === identifier);
+
+    // если touch по которому происходит рассчет не покинул экран, то выхдим сразу
+    // (this.currentTouchElement - не изменился)
+    if (!isRemoveCurTouchElement) {
+      return null;
     }
 
-    return touchElement; // touchElement or null
+    // получение актуального пальца по которому будет происходить расчет
+    this.currentTouchElement = this.touchElements.getFirstTouchElement(); // TouchElement or null
+
+    if (this.currentTouchElement !== null) {
+      // есть взаимодействующие пальцы с экраном
+      return null; //this.currentTouchElement;
+    }
+
+    // Все пальцы покинули экран
+    // процедура инициализации добавления классов и обработчиков
+    const { motion } = touchElementMemory;
+
+    const distanceEnfeeble = ~~(motion.distance / resistance); //round
+
+    let distanceEnfeebleAbs = distanceEnfeeble; // only for compare
+    if (motion.direction === DIRECTION.DOWN) {
+      distanceEnfeebleAbs = ~distanceEnfeebleAbs + 1;
+    }
+
+    if (distanceEnfeebleAbs >= distance) {
+      const classNames = this._getClassNames(motion.direction);
+      this._addClass(...classNames);
+      this._onRefresh(distanceEnfeeble, classNames);
+    }
+    this._setStyle();
+
+    return touchElementMemory; // touchElement or null
   }
 
   _getClassNames(direction) {
