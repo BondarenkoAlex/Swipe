@@ -3,6 +3,21 @@ import Element from './Element';
 import TouchElement from './TouchElement';
 
 class TouchElementList {
+  _activeTouchElement = null;
+  get activeTouchElement() {
+    return this._activeTouchElement;
+  }
+
+  _prevActiveTouchElement = null;
+  get prevActiveTouchElement() {
+    return this._prevActiveTouchElement;
+  }
+
+  _touchElements = Object.create(null);
+  get touchElements() {
+    return this._touchElements;
+  }
+
   /**
    *
    * @param touches
@@ -15,10 +30,13 @@ class TouchElementList {
       const touch = touches[key];
       const { identifier } = touch;
 
-      if (this[identifier] === undefined) {
-        this._setTouchElement(touch, scrollTop, scrollHeight, clientHeight);
+      let touchElements = this._touchElements;
+      if (touchElements[identifier] === undefined) {
+        touchElements[identifier] = TouchElementList.buildTouchElement(touch, scrollTop, scrollHeight, clientHeight);
       }
     });
+    const activeTouchElement = this._getFirstTouchElement();
+    this._setActiveTouchElement(activeTouchElement);
     return this;
   }
 
@@ -27,26 +45,14 @@ class TouchElementList {
       const touch = touches[key];
       const { identifier } = touch;
 
-      let touchElement = this[identifier];
-      if (touchElement === undefined) {
-        this._setTouchElement(touch, scrollTop, scrollHeight, clientHeight);
+      let touchElements = this._touchElements;
+      if (touchElements[identifier] === undefined) {
+        touchElements[identifier] = TouchElementList.buildTouchElement(touch, scrollTop, scrollHeight, clientHeight);
       } else {
-        touchElement.update(touch, scrollTop, scrollHeight, clientHeight);
+        touchElements[identifier].update(touch, scrollTop, scrollHeight, clientHeight);
       }
     });
     return this;
-  }
-
-  updateTouchElement(touch, scrollTop, scrollHeight, clientHeight) {
-      const { identifier } = touch;
-
-      let touchElement = this[identifier];
-      if (touchElement === undefined) {
-        touchElement = this._setTouchElement(touch, scrollTop, scrollHeight, clientHeight);
-      } else {
-        touchElement.update(touch, scrollTop, scrollHeight, clientHeight);
-      }
-    return touchElement;
   }
 
   deleteTouchElements(touches) {
@@ -54,29 +60,44 @@ class TouchElementList {
       const touch = touches[key];
       const { identifier } = touch;
 
-      if (this[identifier] !== undefined) {
-        delete this[identifier];
+      if (this._touchElements[identifier] !== undefined) {
+        delete this._touchElements[identifier];
       }
     });
+
+    const { identifier } = this._activeTouchElement.touch;
+    if (this._touchElements[identifier] === undefined) {
+      // Если активный activeTouchElement был удален, то получаем новый, если такой есть
+      const activeTouchElement = this._getFirstTouchElement(); //touchElement or null
+      this._setActiveTouchElement(activeTouchElement);
+    }
+
     return this;
   }
 
-  getFirstTouchElement() {
+  /**
+   * @private
+   */
+  _getFirstTouchElement() {
     let touchElement = null;
-    Object.keys(this).some(key => (touchElement = this[key], true));
+    Object.keys(this._touchElements).some(key => (touchElement = this._touchElements[key], true));
     return touchElement;
+  }
+
+  _setActiveTouchElement(touchElement) {
+    this._prevActiveTouchElement = this.activeTouchElement;
+    this._activeTouchElement = touchElement;
   }
 
   /**
    *
    * @private
    */
-  _setTouchElement(touch, scrollTop, scrollHeight, clientHeight) {
+  static buildTouchElement(touch, scrollTop, scrollHeight, clientHeight) {
     const { identifier } = touch;
     const value = new Touch(touch);
     const element = new Element(scrollTop, scrollHeight, clientHeight);
-    this[identifier] = new TouchElement(value, element);
-    return this[identifier];
+    return (new TouchElement(value, element));
   }
 }
 

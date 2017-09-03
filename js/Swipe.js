@@ -1,28 +1,51 @@
 import TouchElementList from './TouchElementList';
 import { DIRECTION } from './constants';
-import { isPromise } from './utils/isPromise';
+import {
+  isPromise,
+  isArray,
+  isString,
+} from './utils/check';
+import getTranslateYStyle from './utils/getTranslateYStyle';
+import getAfterRemoveTouchStyle from './utils/getAfterRemoveTouchStyle';
+import resistanceDistance from './utils/resistanceDistance';
 
-const resistance = 4; //ослабление
-const distance = 50; // дистанция
-
-const classsNames = {
-  COMMON: ["pull-to-refresh-onrefresh"],
-  [DIRECTION.UP]: ["pull-to-refresh-onrefresh-up", "dsd"],
-  [DIRECTION.DOWN]: ["pull-to-refresh-onrefresh-down", "dsfdsdsf"],
+const classNames = {
+  COMMON: ["onrefresh"],
+  [DIRECTION.UP]: ["onrefresh-up"],
+  [DIRECTION.DOWN]: ["onrefresh-down"],
 };
 
 class Swipe {
-  constructor(elem) {
+  constructor(elem, distance = 50, resistance = 2, classNames = {}) {
     this.listElement = elem;
+    this.resistance = resistance;
+    this.distance = distance;
+    this.classNames = this._mergeClassNames(classNames);
     this.grandpa = elem.parentElement.parentElement;
     this.touchElements = new TouchElementList();
-    this.currentTouchElement = null;
     this.isActive = false;
+    this.isOnRefreshActive = false;
     this.handleStart = this.handleStart.bind(this);
     this.handleMove = this.handleMove.bind(this);
     this.handleEnd = this.handleEnd.bind(this);
     this.handleCancel = this.handleCancel.bind(this);
     this.handleTransitionEnd = this.handleTransitionEnd.bind(this);
+  }
+
+  _mergeClassNames(clsNames) {
+    let result = {};
+    Object.keys(classNames).forEach((key) => {
+      const value = classNames[key];
+      const cls = clsNames[key];
+      if (isArray(cls)) {
+        result[key] = [...value, ...cls];
+      } else if (isString(cls)) {
+        result[key] = [...value, cls];
+      } else {
+        result[key] = value;
+      }
+    });
+    return result;
   }
 
   addListener() {
@@ -31,6 +54,9 @@ class Swipe {
     this.listElement.addEventListener("touchend", this.handleEnd, false);
     this.listElement.addEventListener("touchcancel", this.handleCancel, false);
     this.listElement.addEventListener("transitionend", this.handleTransitionEnd, false);
+    this.listElement.addEventListener("webkitTransitionEnd", this.handleTransitionEnd, false);
+    this.listElement.addEventListener("oTransitionEnd", this.handleTransitionEnd, false);
+    this.listElement.addEventListener("otransitionend", this.handleTransitionEnd, false);
   }
 
   removeListener() {
@@ -39,6 +65,9 @@ class Swipe {
     this.listElement.removeEventListener("touchend", this.handleEnd, false);
     this.listElement.removeEventListener("touchcancel", this.handleCancel, false);
     this.listElement.removeEventListener("transitionend", this.handleTransitionEnd, false);
+    this.listElement.removeEventListener("webkitTransitionEnd", this.handleTransitionEnd, false);
+    this.listElement.removeEventListener("oTransitionEnd", this.handleTransitionEnd, false);
+    this.listElement.removeEventListener("otransitionend", this.handleTransitionEnd, false);
   }
 
   callbacks(cbs) {
@@ -73,56 +102,46 @@ class Swipe {
           } = this.grandpa;
 
     this.touchElements.setTouchElements(touches, scrollTop, scrollHeight, clientHeight);
-    const firstTouch = this.touchElements.getFirstTouchElement();
-
-    if (firstTouch !== this.currentTouchElement) {
-      this.currentTouchElement = firstTouch;
-    }
 
     if (this.hasOwnProperty("onTouchStart")) {
       this.onTouchStart(this.currentTouchElement, this.touchElements);
     }
   }
 
+  // todo запретить перезатирание свойства style без необходимости на то
+
   handleMove(evt) {
-    const touchElement = this._updateTouchElement(evt);
+    const touches = evt.changedTouches;
+    const touchElements = this._updateTouchElements(touches);
+    const touchElement = touchElements.activeTouchElement;
+    const { motion } = touchElement;
+
+    if (motion.direction === DIRECTION.NONE) {
+      this.isActive = false;
+      this._resetStyle(); // todo не перезаписывать, если не надо
+    } else {
+      // move UP or DOWN
+      evt.preventDefault();
+      if (!this.isOnRefreshActive) {
+        this.isActive = true;
+        const { distance } = resistanceDistance(motion.distance, this.resistance);
+        this._setTranslateYStyle(distance); // todo не перезаписывать, если не надо
+      }
+    }
 
     if (this.hasOwnProperty("onTouchMove")) {
       this.onTouchMove(touchElement, this.touchElements);
     }
   }
 
-  _updateTouchElement(evt) {
-    const touches = evt.changedTouches;
+  _updateTouchElements(touches) {
     const {
             scrollTop,
             scrollHeight,
             clientHeight,
           } = this.grandpa;
 
-    //const { identifier } = this.currentTouchElement.touch;
-    //const touch = getTouchByIdentifier(touches, identifier);
-    //
-    //const touchElement = this.touchElements.updateTouchElement(touch, scrollTop, scrollHeight,
-    // clientHeight);
-    const touchElements = this.touchElements.updateTouchElements(touches, scrollTop, scrollHeight, clientHeight);
-    const { identifier } = this.currentTouchElement.touch;
-    const touchElement = touchElements[identifier];
-    const { motion } = touchElement;
-
-    if (motion.direction === DIRECTION.NONE) {
-      this.isActive = false;
-      this.listElement.style.transform = null;
-    } else {
-      // move UP or DOWN
-      evt.preventDefault();
-      this.isActive = true;
-      // #todo добавить другие свойства для кросбраузерности
-      const distanceEnfeeble = ~~(motion.distance / resistance); //round
-      this.listElement.style.transform = `translateY(${distanceEnfeeble}px)`;
-    }
-
-    return touchElement;
+    return this.touchElements.updateTouchElements(touches, scrollTop, scrollHeight, clientHeight);
   }
 
   handleEnd(evt) {
@@ -142,77 +161,47 @@ class Swipe {
   }
 
   _handleRemove(evt) {
+    const touches = evt.changedTouches; // те, которые покинули экран
+
+    // Удаляем все неактивные (оторванные) touch, в том числе и активный.
+    const touchElements = this.touchElements.deleteTouchElements(touches);
+
     // Если в данный момент скролим список, то реагировать не надо (нет в данный момент эффекта
     // pull-to-refresh).
     if (!this.isActive) {
       return null;
     }
 
-    const touches = evt.changedTouches; // те, которые покинули экран
-    //const touches = evt.touches;
+    const { activeTouchElement, prevActiveTouchElement, } = touchElements;
 
-    // const { identifier } = this.currentTouchElement.touch;
-    //const touch = getTouchByIdentifier(touches, identifier);
-
-    const {
-            scrollTop,
-            scrollHeight,
-            clientHeight,
-          } = this.grandpa;
-
-    const touchElements = this.touchElements.updateTouchElements(touches, scrollTop, scrollHeight, clientHeight);
-
-    // Удаляем все неактивные (оторванные) touch, в том числе и активный.
-    this.touchElements.deleteTouchElements(touches);
-    // Получаем новый активный палец (если такой есть)
-    const touchElementMemory = this.currentTouchElement;
-
-    const { identifier } = this.currentTouchElement.touch;
-
-    // поиск в "оторваных" пальцах расчетный палец по идентофикатору
-    let isRemoveCurTouchElement = Object.keys(touches).some(key => touches[key].identifier === identifier);
-
-    // если touch по которому происходит рассчет не покинул экран, то выхдим сразу
-    // (this.currentTouchElement - не изменился)
-    if (!isRemoveCurTouchElement) {
+    if (activeTouchElement !== null) {
       return null;
-    }
-
-    // получение актуального пальца по которому будет происходить расчет
-    this.currentTouchElement = this.touchElements.getFirstTouchElement(); // TouchElement or null
-
-    if (this.currentTouchElement !== null) {
-      // есть взаимодействующие пальцы с экраном
-      return null; //this.currentTouchElement;
     }
 
     // Все пальцы покинули экран
     // процедура инициализации добавления классов и обработчиков
-    const { motion } = touchElementMemory;
+    const { motion } = prevActiveTouchElement;
 
-    const distanceEnfeeble = ~~(motion.distance / resistance); //round
+    const { distance, distanceAbs } = resistanceDistance(motion.distance, this.resistance);
 
-    let distanceEnfeebleAbs = distanceEnfeeble; // only for compare
-    if (motion.direction === DIRECTION.DOWN) {
-      distanceEnfeebleAbs = ~distanceEnfeebleAbs + 1;
-    }
-
-    if (distanceEnfeebleAbs >= distance) {
+    if (distanceAbs >= this.distance) {
       const classNames = this._getClassNames(motion.direction);
-      this._addClass(...classNames);
-      this._onRefresh(distanceEnfeeble, classNames);
+      //this._addClass(...classNames);
+      this._addClass(classNames);
+      this._onRefresh(distance, classNames);
+      this._setAfterRemoveTouchStyle(this.distance);
     }
-    this._setStyle();
+    this._setAfterRemoveTouchStyle(null);
 
-    return touchElementMemory; // touchElement or null
+    return prevActiveTouchElement; // touchElement or null
   }
 
   _getClassNames(direction) {
     let classNames = "";
     if (direction === DIRECTION.DOWN) {
-      classNames = classsNames.COMMON.concat(classsNames.DOWN);
+      classNames = this.classNames.COMMON.concat(this.classNames.DOWN);
     } else if (direction === DIRECTION.UP) {
-      classNames = classsNames.COMMON.concat(classsNames.UP);
+      classNames = this.classNames.COMMON.concat(this.classNames.UP);
     }
     return classNames;
   }
@@ -221,29 +210,39 @@ class Swipe {
     if (this.hasOwnProperty("onRefresh")) {
       const promise = this.onRefresh(distance);
       const self = this;
+      this.isOnRefreshActive = true;
       if (!isPromise(promise)) {
         throw new Error('The onRefresh function`s return value must be must be the Promise');
       }
       promise
         .then(() => {
-          self._removeClass.call(self, ...classNames);
+          self.isOnRefreshActive = false;
+          self._removeClass.call(self, classNames);
+          self._setAfterRemoveTouchStyle(null);
+          //self._reset.call(self, classNames);
         })
     }
   }
 
-  _addClass() {
+  _addClass(classNames) {
     const classList = this.grandpa.classList;
-    classList.add(...arguments);
+    classList.add(...classNames);
   }
 
-  _removeClass() {
+  _removeClass(classNames) {
     const classList = this.grandpa.classList;
-    classList.remove(...arguments);
+    classList.remove(...classNames);
   }
 
-  _setStyle() {
-    // #todo править получение стилей
-    this.listElement.style = getStyle(0);
+  _setTranslateYStyle(distance) {
+    this.listElement.style = getTranslateYStyle(distance);
+  }
+
+  _setAfterRemoveTouchStyle(distance) {
+    const dist = distance || 0;
+    const translateY = getTranslateYStyle(distance);
+    const otherStyle = getAfterRemoveTouchStyle();
+    this.listElement.style = `${translateY}${otherStyle}`;
   }
 
   _resetStyle() {
@@ -251,36 +250,27 @@ class Swipe {
   }
 
   handleTransitionEnd(evt) {
-    // #todo добавить другие свойства для кросбраузерности "otransitionend"
-    if (evt.type === "transitionend" && evt.propertyName === "transform") {
-      this.isActive = false;
-      this._resetStyle();
+    if (
+      (evt.type === "transitionend"
+        || evt.type === "webkitTransitionEnd"
+        || evt.type === "oTransitionEnd"
+        || evt.type === "otransitionend")
+      && evt.propertyName === "transform"
+    ) {
+      if (!this.isOnRefreshActive) {
+        this.isActive = false;
+        this._resetStyle();
+      }
     }
   }
+
+  // _reset(classNames) {
+  //   this._removeClass(classNames);
+  //   this._setAfterRemoveTouchStyle();
+  //   this.isActive = false;
+  //   this._resetStyle();
+  // }
 }
 
 export default Swipe;
-
-function getStyle(dist) {
-  // #todo добавить другие свойства для кросбраузерности
-  return (
-    `transform:translateY(${dist}px);` +
-    'transition-duration:300ms;' +
-    'transition-timing-function:cubic-bezier(0.33, 0.66, 0.66, 1);' +
-    'transition-delay:ms'
-  );
-}
-
-function getTouchByIdentifier(touches, identifier) {
-  let touch;
-  Object.keys(touches).some((key) => {
-    const touchValue = touches[key];
-    const isFinded = touchValue.identifier === identifier;
-    if (isFinded) {
-      touch = touchValue;
-    }
-    return isFinded;
-  });
-  return touch;
-}
 
