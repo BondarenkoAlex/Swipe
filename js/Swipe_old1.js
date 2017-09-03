@@ -64,7 +64,8 @@ class Swipe {
   }
 
   handleStart(evt) {
-    const touches = evt.changedTouches;
+    //const touches = evt.changedTouches;
+    const touches = evt.touches;
 
     const {
             scrollTop,
@@ -93,20 +94,17 @@ class Swipe {
   }
 
   _updateTouchElement(evt) {
-    const touches = evt.changedTouches;
+    //const touches = evt.changedTouches;
+    const touches = evt.touches;
     const {
             scrollTop,
             scrollHeight,
             clientHeight,
           } = this.grandpa;
 
-    //const { identifier } = this.currentTouchElement.touch;
-    //const touch = getTouchByIdentifier(touches, identifier);
-    //
-    //const touchElement = this.touchElements.updateTouchElement(touch, scrollTop, scrollHeight, clientHeight);
-    const touchElements = this.touchElements.updateTouchElements(touches, scrollTop, scrollHeight, clientHeight);
     const { identifier } = this.currentTouchElement.touch;
-    const touchElement = touchElements[identifier];
+    const touch = getTouchByIdentifier(touches, identifier);
+    const touchElement = this.touchElements.updateTouchElement(touch, scrollTop, scrollHeight, clientHeight);
     const { motion } = touchElement;
 
     if (motion.direction === DIRECTION.DOWN
