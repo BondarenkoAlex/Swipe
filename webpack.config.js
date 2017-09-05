@@ -16,9 +16,17 @@ const config = {
     hot: true,
     //host: '127.0.0.25',
   },
+
   watchOptions: {
     aggregateTimeout: 300,
     poll: 1000,
+  },
+
+  resolve: {
+    modules: [
+      'node_modules',
+    ],
+    extensions: ['.js', '.jsx'],
   },
 
   module: {

@@ -1,6 +1,6 @@
 import '../style/style.css';
-import Swipe from './Swipe';
-import { DIRECTION } from './constants';
+import PullToRefresh from './PullToRefresh';
+//import { DIRECTION } from './PullToRefresh/constants';
 
 window.onload = function () {
   startup();
@@ -17,7 +17,7 @@ const distance = 50; // дистанция
 
 function startup() {
   const elem = document.getElementById("ptr-list");
-  const swipe = new Swipe(elem, distance, resistance);
+  const swipe = new PullToRefresh(elem, distance, resistance);
   swipe.addListener();
 
   swipe.onRefresh(function (distance) {

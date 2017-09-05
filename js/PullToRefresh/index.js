@@ -16,7 +16,7 @@ const classNames = {
   [DIRECTION.DOWN]: ["onrefresh-down"],
 };
 
-class Swipe {
+class PullToRefresh {
   constructor(elem, distance = 50, resistance = 2, classNames = {}) {
     this.listElement = elem;
     this.distance = distance;
@@ -298,5 +298,5 @@ class Swipe {
   }
 }
 
-export default Swipe;
+export default PullToRefresh;
 
