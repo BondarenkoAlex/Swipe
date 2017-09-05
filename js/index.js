@@ -6,18 +6,18 @@ window.onload = function () {
   startup();
 };
 
-//lconst resistance = 4; //ослабление
+const resistance = 2; //ослабление
 const distance = 50; // дистанция
 
-const classsNames = {
-  COMMON: ["onrefresh"],
-  [DIRECTION.UP]: ["onrefresh-up"],
-  [DIRECTION.DOWN]: ["onrefresh-down"],
-};
+// const classsNames = {
+//   COMMON: ["onrefresh"],
+//   [DIRECTION.UP]: ["onrefresh-up"],
+//   [DIRECTION.DOWN]: ["onrefresh-down"],
+// };
 
 function startup() {
   const elem = document.getElementById("ptr-list");
-  const swipe = new Swipe(elem,50,2, {COMMON: "erer"});
+  const swipe = new Swipe(elem, distance, resistance);
   swipe.addListener();
 
   swipe.onRefresh(function (distance) {

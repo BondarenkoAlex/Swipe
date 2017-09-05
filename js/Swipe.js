@@ -4,9 +4,10 @@ import {
   isPromise,
   isArray,
   isString,
+  isObject,
 } from './utils/check';
 import getTranslateYStyle from './utils/getTranslateYStyle';
-import getAfterRemoveTouchStyle from './utils/getAfterRemoveTouchStyle';
+import getTransitionStyle from './utils/getTransitionStyle';
 import resistanceDistance from './utils/resistanceDistance';
 
 const classNames = {
@@ -18,18 +19,30 @@ const classNames = {
 class Swipe {
   constructor(elem, distance = 50, resistance = 2, classNames = {}) {
     this.listElement = elem;
-    this.resistance = resistance;
     this.distance = distance;
-    this.classNames = this._mergeClassNames(classNames);
-    this.grandpa = elem.parentElement.parentElement;
-    this.touchElements = new TouchElementList();
-    this.isActive = false;
-    this.isOnRefreshActive = false;
-    this.handleStart = this.handleStart.bind(this);
-    this.handleMove = this.handleMove.bind(this);
-    this.handleEnd = this.handleEnd.bind(this);
-    this.handleCancel = this.handleCancel.bind(this);
-    this.handleTransitionEnd = this.handleTransitionEnd.bind(this);
+    this.resistance = resistance;
+    this.classNames = classNames;
+    this._grandpa = elem.parentElement.parentElement;
+    this._touchElements = new TouchElementList();
+    this._isActive = false;
+    this._distanceReverse = ~distance + 1; // reverse
+    this._isRefreshActive = false;
+    this._handleStart = this._handleStart.bind(this);
+    this._handleMove = this._handleMove.bind(this);
+    this._handleEnd = this._handleEnd.bind(this);
+    this._handleCancel = this._handleCancel.bind(this);
+    this._handleTransitionEnd = this._handleTransitionEnd.bind(this);
+  }
+
+  get classNames() {
+    return this._classNames;
+  }
+
+  set classNames(value) {
+    if (!isObject(value)) {
+      throw new Error('classNames must be a object');
+    }
+    this._classNames = this._mergeClassNames(value);
   }
 
   _mergeClassNames(clsNames) {
@@ -49,25 +62,32 @@ class Swipe {
   }
 
   addListener() {
-    this.listElement.addEventListener("touchstart", this.handleStart, false);
-    this.listElement.addEventListener("touchmove", this.handleMove, false);
-    this.listElement.addEventListener("touchend", this.handleEnd, false);
-    this.listElement.addEventListener("touchcancel", this.handleCancel, false);
-    this.listElement.addEventListener("transitionend", this.handleTransitionEnd, false);
-    this.listElement.addEventListener("webkitTransitionEnd", this.handleTransitionEnd, false);
-    this.listElement.addEventListener("oTransitionEnd", this.handleTransitionEnd, false);
-    this.listElement.addEventListener("otransitionend", this.handleTransitionEnd, false);
+    this.listElement.addEventListener("touchstart", this._handleStart, false);
+    this.listElement.addEventListener("touchmove", this._handleMove, false);
+    this.listElement.addEventListener("touchend", this._handleEnd, false);
+    this.listElement.addEventListener("touchcancel", this._handleCancel, false);
   }
 
   removeListener() {
-    this.listElement.removeEventListener("touchstart", this.handleStart, false);
-    this.listElement.removeEventListener("touchmove", this.handleMove, false);
-    this.listElement.removeEventListener("touchend", this.handleEnd, false);
-    this.listElement.removeEventListener("touchcancel", this.handleCancel, false);
-    this.listElement.removeEventListener("transitionend", this.handleTransitionEnd, false);
-    this.listElement.removeEventListener("webkitTransitionEnd", this.handleTransitionEnd, false);
-    this.listElement.removeEventListener("oTransitionEnd", this.handleTransitionEnd, false);
-    this.listElement.removeEventListener("otransitionend", this.handleTransitionEnd, false);
+    this.listElement.removeEventListener("touchstart", this._handleStart, false);
+    this.listElement.removeEventListener("touchmove", this._handleMove, false);
+    this.listElement.removeEventListener("touchend", this._handleEnd, false);
+    this.listElement.removeEventListener("touchcancel", this._handleCancel, false);
+    this._removeListenerTransitionend();
+  }
+
+  _addListenerTransitionend() {
+    this.listElement.addEventListener("transitionend", this._handleTransitionEnd, false);
+    this.listElement.addEventListener("webkitTransitionEnd", this._handleTransitionEnd, false);
+    this.listElement.addEventListener("oTransitionEnd", this._handleTransitionEnd, false);
+    this.listElement.addEventListener("otransitionend", this._handleTransitionEnd, false);
+  }
+
+  _removeListenerTransitionend() {
+    this.listElement.removeEventListener("transitionend", this._handleTransitionEnd, false);
+    this.listElement.removeEventListener("webkitTransitionEnd", this._handleTransitionEnd, false);
+    this.listElement.removeEventListener("oTransitionEnd", this._handleTransitionEnd, false);
+    this.listElement.removeEventListener("otransitionend", this._handleTransitionEnd, false);
   }
 
   callbacks(cbs) {
@@ -92,45 +112,46 @@ class Swipe {
     this.onRefresh = func;
   }
 
-  handleStart(evt) {
+  _handleStart(evt) {
     const touches = evt.changedTouches;
 
     const {
             scrollTop,
             scrollHeight,
             clientHeight,
-          } = this.grandpa;
+          } = this._grandpa;
 
-    this.touchElements.setTouchElements(touches, scrollTop, scrollHeight, clientHeight);
+    this._touchElements.setTouchElements(touches, scrollTop, scrollHeight, clientHeight);
 
     if (this.hasOwnProperty("onTouchStart")) {
-      this.onTouchStart(this.currentTouchElement, this.touchElements);
+      this.onTouchStart(this.currentTouchElement, this._touchElements);
     }
   }
 
-  // todo запретить перезатирание свойства style без необходимости на то
-
-  handleMove(evt) {
+  _handleMove(evt) {
     const touches = evt.changedTouches;
     const touchElements = this._updateTouchElements(touches);
     const touchElement = touchElements.activeTouchElement;
     const { motion } = touchElement;
 
     if (motion.direction === DIRECTION.NONE) {
-      this.isActive = false;
-      this._resetStyle(); // todo не перезаписывать, если не надо
+      if (this._isActive) {
+        this._isActive = false;
+        this._resetStyle();
+      }
     } else {
       // move UP or DOWN
       evt.preventDefault();
-      if (!this.isOnRefreshActive) {
-        this.isActive = true;
+      if (!this._isRefreshActive) {
+        this._isActive = true;
+        this._removeListenerTransitionend();
         const { distance } = resistanceDistance(motion.distance, this.resistance);
-        this._setTranslateYStyle(distance); // todo не перезаписывать, если не надо
+        this._setTranslateYStyle(distance);
       }
     }
 
     if (this.hasOwnProperty("onTouchMove")) {
-      this.onTouchMove(touchElement, this.touchElements);
+      this.onTouchMove(touchElement, this._touchElements);
     }
   }
 
@@ -139,24 +160,24 @@ class Swipe {
             scrollTop,
             scrollHeight,
             clientHeight,
-          } = this.grandpa;
+          } = this._grandpa;
 
-    return this.touchElements.updateTouchElements(touches, scrollTop, scrollHeight, clientHeight);
+    return this._touchElements.updateTouchElements(touches, scrollTop, scrollHeight, clientHeight);
   }
 
-  handleEnd(evt) {
+  _handleEnd(evt) {
     const touchElement = this._handleRemove(evt);
 
     if (touchElement !== null && this.hasOwnProperty("onTouchEnd")) {
-      this.onTouchEnd(touchElement, this.touchElements);
+      this.onTouchEnd(touchElement, this._touchElements);
     }
   }
 
-  handleCancel(evt) {
+  _handleCancel(evt) {
     const touchElement = this._handleRemove(evt);
 
     if (touchElement !== null && this.hasOwnProperty("onTouchCancel")) {
-      this.onTouchCancel(touchElement, this.touchElements);
+      this.onTouchCancel(touchElement, this._touchElements);
     }
   }
 
@@ -164,11 +185,11 @@ class Swipe {
     const touches = evt.changedTouches; // те, которые покинули экран
 
     // Удаляем все неактивные (оторванные) touch, в том числе и активный.
-    const touchElements = this.touchElements.deleteTouchElements(touches);
+    const touchElements = this._touchElements.deleteTouchElements(touches);
 
     // Если в данный момент скролим список, то реагировать не надо (нет в данный момент эффекта
     // pull-to-refresh).
-    if (!this.isActive) {
+    if (!this._isActive) {
       return null;
     }
 
@@ -185,18 +206,26 @@ class Swipe {
     const { distance, distanceAbs } = resistanceDistance(motion.distance, this.resistance);
 
     if (distanceAbs >= this.distance) {
-      const classNames = this._getClassNames(motion.direction);
-      //this._addClass(...classNames);
+      const direction = motion.direction;
+      let dist = this.distance;
+      if (direction === DIRECTION.DOWN) {
+        dist = this._distanceReverse;
+      }
+      const classNames = this._getClassNamesByBirection(direction);
+
       this._addClass(classNames);
-      this._onRefresh(distance, classNames);
-      this._setAfterRemoveTouchStyle(this.distance);
+      this._setTransitionStyle(dist);
+      this._onRefresh(direction, dist, classNames);
+
+    } else {
+      this._addListenerTransitionend();
+      this._setTransitionStyle(null);
     }
-    this._setAfterRemoveTouchStyle(null);
 
     return prevActiveTouchElement; // touchElement or null
   }
 
-  _getClassNames(direction) {
+  _getClassNamesByBirection(direction) {
     let classNames = "";
     if (direction === DIRECTION.DOWN) {
       classNames = this.classNames.COMMON.concat(this.classNames.DOWN);
@@ -206,70 +235,67 @@ class Swipe {
     return classNames;
   }
 
-  _onRefresh(distance, classNames) {
+  _onRefresh(direction, distance, classNames) {
     if (this.hasOwnProperty("onRefresh")) {
-      const promise = this.onRefresh(distance);
-      const self = this;
-      this.isOnRefreshActive = true;
+      const promise = this.onRefresh(direction, distance);
+      const _this = this;
+      this._isRefreshActive = true;
       if (!isPromise(promise)) {
         throw new Error('The onRefresh function`s return value must be must be the Promise');
       }
       promise
         .then(() => {
-          self.isOnRefreshActive = false;
-          self._removeClass.call(self, classNames);
-          self._setAfterRemoveTouchStyle(null);
-          //self._reset.call(self, classNames);
+          _this._removeClass.call(_this, classNames);
+          _this._addListenerTransitionend();
+          _this._setTransitionStyle(null);
         })
     }
   }
 
   _addClass(classNames) {
-    const classList = this.grandpa.classList;
+    const classList = this._grandpa.classList;
     classList.add(...classNames);
   }
 
   _removeClass(classNames) {
-    const classList = this.grandpa.classList;
+    const classList = this._grandpa.classList;
     classList.remove(...classNames);
   }
 
-  _setTranslateYStyle(distance) {
-    this.listElement.style = getTranslateYStyle(distance);
-  }
+  _setTranslateYStyle = (function IIFE() {
+    let _distance = null;
+    return function (distance) {
+      if (_distance !== distance) {
+        this.listElement.style.cssText = getTranslateYStyle(distance);
+      }
+    }
+  })();
 
-  _setAfterRemoveTouchStyle(distance) {
+  _setTransitionStyle(distance) {
     const dist = distance || 0;
     const translateY = getTranslateYStyle(distance);
-    const otherStyle = getAfterRemoveTouchStyle();
-    this.listElement.style = `${translateY}${otherStyle}`;
+    const otherStyle = getTransitionStyle();
+    this.listElement.style.cssText = `${translateY}${otherStyle}`;
   }
 
   _resetStyle() {
-    this.listElement.style = null;
+    this.listElement.style.cssText = null;
   }
 
-  handleTransitionEnd(evt) {
+  _handleTransitionEnd(evt) {
     if (
       (evt.type === "transitionend"
-        || evt.type === "webkitTransitionEnd"
-        || evt.type === "oTransitionEnd"
-        || evt.type === "otransitionend")
+      || evt.type === "webkitTransitionEnd"
+      || evt.type === "oTransitionEnd"
+      || evt.type === "otransitionend")
       && evt.propertyName === "transform"
     ) {
-      if (!this.isOnRefreshActive) {
-        this.isActive = false;
-        this._resetStyle();
-      }
+      this._isActive = false;
+      this._isRefreshActive = false;
+      this._resetStyle();
+      this._removeListenerTransitionend();
     }
   }
-
-  // _reset(classNames) {
-  //   this._removeClass(classNames);
-  //   this._setAfterRemoveTouchStyle();
-  //   this.isActive = false;
-  //   this._resetStyle();
-  // }
 }
 
 export default Swipe;

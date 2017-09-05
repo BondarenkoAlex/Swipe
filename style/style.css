@@ -39,7 +39,7 @@
 
 .onrefresh .pull-to-refresh-list {
     background-color: yellow;
-    transform: translateY(50px);
+    /*transform: translateY(50px);*/
 }
 
 .pull-to-refresh-list.active-down {
